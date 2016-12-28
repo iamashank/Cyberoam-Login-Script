@@ -22,7 +22,7 @@ br.open(url)
 
 br.select_form( 'frmHTTPClientLogin' )
 br.form['username'] = 'be1014815'       #Enter username here
-br.form['password'] = '********'        #Enter password in plain-text here (I know, so much for security...)
+br.form['password'] = 'your-password-here'        #Enter password in plain-text here (I know, so much for security...)
 br.submit()
 
 response_code = ""
