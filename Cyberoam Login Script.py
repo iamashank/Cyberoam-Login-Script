@@ -4,6 +4,7 @@ from mechanize import Browser
 import time
 from Crypto.Cipher import AES
 import base64
+import getpass
 
 MASTER_KEY="Some-life-long-base-key-yolo-to-use-as-life-a-encyrption-key"
 
@@ -48,7 +49,7 @@ except:
     file.close()
 
 if (not password):
-        password = raw_input("Enter the password\n")
+        password = getpass.getpass('Enter the password:\n')
         password = encrypt_val(password)
         file = open("pass.txt", "w")
         file.write(password)
