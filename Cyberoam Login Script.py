@@ -39,7 +39,7 @@ else:
     ssl._create_default_https_context = _create_unverified_https_context
 
 br.open(url)
-
+password = ''
 try:
     file = open('pass.txt', 'r')
     password = file.read()
