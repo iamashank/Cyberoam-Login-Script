@@ -27,7 +27,7 @@ def decrypt_val(cipher_text):
 br = Browser()
 br.set_handle_robots( False )
 br.addheaders = [('User-agent', 'Firefox')]
-url = "https://172.16.1.1:8090"         #Cyberroam IP
+url = "https://172.16.1.1:8090"         #Cyberoam IP
 
 try:
     _create_unverified_https_context = ssl._create_unverified_context
