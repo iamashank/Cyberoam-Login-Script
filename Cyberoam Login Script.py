@@ -1,81 +1,97 @@
-from __future__ import print_function
 import ssl
-from mechanize import Browser
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 import time
-from Crypto.Cipher import AES
 import base64
 import getpass
 
-MASTER_KEY="Some-life-long-base-key-yolo-to-use-as-life-a-encyrption-key"
+#Setup here
 
-def encrypt_val(clear_text):
-    enc_secret = AES.new(MASTER_KEY[:32])
-    tag_string = (str(clear_text) +
-                  (AES.block_size -
-                   len(str(clear_text)) % AES.block_size) * "\0")
-    cipher_text = base64.b64encode(enc_secret.encrypt(tag_string))
+MASTER_KEY =  3464 # Must be a number less than 10000
+url = 'https://172.16.1.1:8090/login.xml' # Set POST destination URL here
+username = 'be1005815' #Set your username here
 
-    return cipher_text
+#Setup ends
 
+# Don't modify anything below this line
 
-def decrypt_val(cipher_text):
-    dec_secret = AES.new(MASTER_KEY[:32])
-    raw_decrypted = dec_secret.decrypt(base64.b64decode(cipher_text))
-    clear_val = raw_decrypted.rstrip("\0")
-    return clear_val
-
-br = Browser()
-br.set_handle_robots( False )
-br.addheaders = [('User-agent', 'Firefox')]
-url = "https://172.16.1.1:8090"         #Cyberoam IP
-
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    # Legacy Python that doesn't verify HTTPS certificates by default
-    pass
-else:
-    # Handle target environment that doesn't support HTTPS verification
-    ssl._create_default_https_context = _create_unverified_https_context
-
-br.open(url)
 password = ''
+
+def encrypt_val(input_text):
+    b = len(input_text)
+    input_text = input_text * MASTER_KEY
+    i = 0
+    box = [['a' for x in range(MASTER_KEY)] for y in range(b)]
+    for j in range(b):
+        for k in range(MASTER_KEY):
+            box[j][k] = input_text[i]
+            i+=1
+    output_text = ""
+    c = MASTER_KEY % 256
+    for k in range(MASTER_KEY):
+        for j in range(b):
+            output_text += chr((ord(box[j][k])+c)%256)
+    return output_text
+
+def decrypt_val(input_text):
+    b = len(input_text)//MASTER_KEY
+    i = 0
+    box = [['a' for x in range(MASTER_KEY)] for y in range(b)]
+    for k in range(MASTER_KEY):
+        for j in range(b):
+            box[j][k] = input_text[i]
+            i += 1
+    output_text = ""
+    c = MASTER_KEY % 256
+    for j in range(b):
+        for k in range(MASTER_KEY):
+            output_text += chr((ord(box[j][k])-MASTER_KEY+256)%256)
+    return output_text[0:b]
+
+
+def hardLogin():
+    global password
+    while(True):
+        password = getpass.getpass('Enter the password: ')
+        data = {'username': username, 'password': password, 'mode': '191'}
+        res = str(urlopen(Request(url, urlencode(data).encode()),context=ctx).read())
+        if(len(res.split('<![CDATA[You have successfully logged in]]>'))>1):
+            break
+        else:
+            print("Incorrect Username/Password. Please try again..")
+    password = encrypt_val(password)
+    file = open("pass.enc","w")
+    file.write(password)
+    file.close()
+    time.sleep(1)
+
+# The following lines invalidate SSL errors
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+
 try:
-    file = open('pass.txt', 'r')
+    file = open("pass.enc","r")
     password = file.read()
     file.close()
 except:
-    file = open("pass.txt", "w")
-    file.close()
+    pass
 
 if (not password):
-        password = getpass.getpass('Enter the password:\n')
-        password = encrypt_val(password)
-        file = open("pass.txt", "w")
-        file.write(password)
-        file.close()
+    hardLogin() # Ask for password from user since no password was saved earlier
 
-password = decrypt_val(password)
+while(True):
+    password = decrypt_val(password)
 
-br.select_form( 'frmHTTPClientLogin' )
-br.form['username'] = 'be1014815'       #Enter username here
-br.form['password'] = password          #User password
-br.submit()
+    data = {'username': username, 'password': password, 'mode': '191'}
+    res = str(urlopen(Request(url, urlencode(data).encode()),context=ctx).read())
 
-response_code = ""
-response_code = br.response().read()
+    if(len(res.split('<![CDATA[You have successfully logged in]]>'))>1):
+        #Login successful
+        print("Login Successful..")
+        time.sleep(1)
+        exit(0)
+    else:
+        print("Incorrect Username/Password. Please try again..")
+        hardLogin() # Ask for password again as the saved password was incorrect
 
-    
-i = 0
-count_i = 0
-while count_i != 4:
-    if response_code[i] == '[':
-        count_i += 1
-    i += 1
-
-while response_code[i] != ']':
-    print (response_code[i],end="")
-    i += 1
-print ()
-
-a = raw_input("Press Enter to Exit")
